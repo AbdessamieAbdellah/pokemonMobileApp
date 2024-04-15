@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, SafeAreaView, Dimensions, Alert } from 'react-native';
+import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, SafeAreaView, Dimensions, Alert, ActivityIndicator } from 'react-native';
 import { Provider, useSelector, useDispatch } from 'react-redux';
 import { configureStore, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -27,7 +27,6 @@ interface AppState {
 const Tab = createBottomTabNavigator();
 
 // Redux slices 
-//Should be in a separate file 
 const pokemonSlice = createSlice({
   name: 'pokemon',
   initialState: [] as Pokemon[],
@@ -66,7 +65,6 @@ const cartSlice = createSlice({
 });
 
 // Create Redux store
-//Should be in a separate file 
 const store = configureStore({
   reducer: {
     pokemon: pokemonSlice.reducer,
@@ -74,14 +72,14 @@ const store = configureStore({
   },
 });
 
-
 // Destructure actions from slices
 const { fetchPokemonSuccess } = pokemonSlice.actions;
 const { addToCart, adjustQuantity, removeFromCart } = cartSlice.actions;
 
-//Should be in a separate file 
+// Pokemon List Screen
 const PokemonListScreen = () => {
   const [totalItems, setTotalItems] = useState(0);
+  const [loading, setLoading] = useState(true);
   const dispatch = useDispatch();
   const pokemonList = useSelector((state: AppState) => state.pokemon);
   const cartItems = useSelector((state: AppState) => state.cart);
@@ -91,8 +89,7 @@ const PokemonListScreen = () => {
     fetchPokemonData();
   }, []);
 
-
-    // Fetch Pokemon data function
+  // Fetch Pokemon data function
   const fetchPokemonData = async () => {
     try {
       const response = await fetch('https://pokeapi.co/api/v2/pokemon');
@@ -103,13 +100,13 @@ const PokemonListScreen = () => {
         imageUrl: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${index + 1}.png`,
       }));
       dispatch(fetchPokemonSuccess(pokemonData));
+      setLoading(false); // Set loading to false when data is fetched
     } catch (error) {
       console.error('Error fetching Pokémon data:', error);
     }
   };
 
-
-   // Add Pokemon to cart function
+  // Add Pokemon to cart function
   const handleAddToCart = (pokemon: Pokemon) => {
     dispatch(addToCart(pokemon));
   };
@@ -118,6 +115,14 @@ const PokemonListScreen = () => {
     const total = cartItems.reduce((acc, item) => acc + item.quantity, 0);
     setTotalItems(total);
   }, [cartItems]);
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#007bff" />
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -150,9 +155,8 @@ const PokemonListScreen = () => {
   );
 };
 
-//Should be in a separate file 
+// Cart Screen
 const CartScreen = () => {
-  // State and hooks
   const dispatch = useDispatch();
   const cartItems = useSelector((state: AppState) => state.cart);
 
@@ -161,7 +165,7 @@ const CartScreen = () => {
     dispatch(adjustQuantity({ productID, newQuantity }));
   };
 
-   // Remove item from cart function
+  // Remove item from cart function
   const handleRemoveFromCart = (productID: string) => {
     dispatch(removeFromCart(productID));
   };
@@ -171,8 +175,7 @@ const CartScreen = () => {
     return cartItems.reduce((acc, item) => acc + item.quantity, 0);
   };
 
-
-   // Handle buy action function
+  // Handle buy action function
   const handleBuy = () => {
     const totalItems = getTotalItems();
     const message = `You are buying ${totalItems} items`;
@@ -227,7 +230,6 @@ const CartScreen = () => {
 };
 
 // Main component
-//Should be in a separate file 
 const App = () => {
   return (
     <Provider store={store}>
@@ -244,7 +246,6 @@ const App = () => {
               return <FontAwesome5 name={iconName} size={size} color={color} />;
             },
           })}
-          //@ts-ignore
           tabBarOptions={{
             activeTintColor: '#007bff',
             inactiveTintColor: 'gray',
@@ -257,11 +258,17 @@ const App = () => {
     </Provider>
   );
 };
-//Each styling should be included in separate folder with its .tsx file
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 10,
+    backgroundColor: '#fff',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
     backgroundColor: '#fff',
   },
   topBar: {
@@ -269,7 +276,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 10,
-    marginHorizontal:4
+    marginHorizontal: 4,
   },
   totalItemsContainer: {
     flexDirection: 'row',
